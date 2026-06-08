@@ -2,6 +2,8 @@
 // change z-order, and delete. Animation controls are added in Phase 3.
 
 import { useEditor } from "../state/store";
+import { HANDS } from "../engine/hands";
+import type { DrawStyle, EasingName } from "../engine/types";
 
 function round(n: number, p = 2): number {
   const f = 10 ** p;
@@ -46,8 +48,10 @@ export function PropertiesPanel() {
     );
   }
 
+  const updateAnim = useEditor((s) => s.updateAnim);
   const asset = assetById(selected.assetId);
   const t = selected.transform;
+  const anim = selected.anim;
 
   return (
     <aside className="panel">
@@ -74,6 +78,63 @@ export function PropertiesPanel() {
             onChange={(v) => updateTransform(selected.id, { rotation: v })}
           />
         </div>
+      </div>
+
+      <div className="group">
+        <h3>Animation</h3>
+        <div className="grid2">
+          <NumberField
+            label="Draw (s)"
+            value={anim.drawDuration}
+            step={0.25}
+            onChange={(v) => updateAnim(selected.id, { drawDuration: Math.max(0, v) })}
+          />
+          <NumberField
+            label="Hold (s)"
+            value={anim.holdDuration}
+            step={0.25}
+            onChange={(v) => updateAnim(selected.id, { holdDuration: Math.max(0, v) })}
+          />
+        </div>
+        <label className="field">
+          <span>Style</span>
+          <select
+            value={anim.style}
+            onChange={(e) => updateAnim(selected.id, { style: e.target.value as DrawStyle })}
+          >
+            <option value="draw">draw</option>
+            <option value="fade">fade</option>
+            <option value="pop">pop</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>Easing</span>
+          <select
+            value={anim.easing}
+            onChange={(e) => updateAnim(selected.id, { easing: e.target.value as EasingName })}
+          >
+            <option value="linear">linear</option>
+            <option value="easeIn">easeIn</option>
+            <option value="easeOut">easeOut</option>
+            <option value="easeInOut">easeInOut</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>Hand</span>
+          <select
+            value={anim.handId ?? ""}
+            onChange={(e) =>
+              updateAnim(selected.id, { handId: e.target.value === "" ? null : e.target.value })
+            }
+          >
+            <option value="">none</option>
+            {HANDS.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="group">

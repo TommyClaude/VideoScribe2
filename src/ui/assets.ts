@@ -5,7 +5,9 @@
 // exercisable with `npm run dev`. The native path needs visual QC on a Mac.
 
 import { newId } from "../engine/factory";
+import { getHand } from "../engine/hands";
 import { parseSvgSize } from "../engine/svg";
+import { parseSvg, type FlatSvg } from "../engine/svgParse";
 import type { Asset, Size } from "../engine/types";
 import type { ResolvedImage } from "../engine/compositor";
 
@@ -141,42 +143,65 @@ export function onImageLoaded(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-function svgDataUrl(svg: string): string {
+export function svgDataUrl(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function beginLoad(asset: Asset) {
-  cache.set(asset.id, { status: "loading", resolved: null });
+/** Load `src` into an Image under `key`, notifying listeners when ready. */
+function beginLoad(key: string, src: string, width?: number, height?: number) {
+  cache.set(key, { status: "loading", resolved: null });
   const img = new Image();
-  const src = asset.type === "svg" ? svgDataUrl(asset.svg ?? "") : asset.src ?? "";
   img.onload = () => {
-    cache.set(asset.id, {
+    cache.set(key, {
       status: "ready",
-      resolved: {
-        source: img,
-        width: asset.width ?? img.naturalWidth,
-        height: asset.height ?? img.naturalHeight,
-      },
+      resolved: { source: img, width: width ?? img.naturalWidth, height: height ?? img.naturalHeight },
     });
     notify();
   };
   img.onerror = () => {
-    cache.set(asset.id, { status: "error", resolved: null });
+    cache.set(key, { status: "error", resolved: null });
     notify();
   };
   img.src = src;
 }
 
-/**
- * Resolve an asset's image for the compositor. Returns null while loading;
- * triggers a load + notification on first request.
- */
-export function resolveAssetImage(asset: Asset | undefined): ResolvedImage | null {
-  if (!asset || asset.type === "audio") return null;
-  const entry = cache.get(asset.id);
+function resolveImage(key: string, src: string, width?: number, height?: number): ResolvedImage | null {
+  const entry = cache.get(key);
   if (!entry) {
-    beginLoad(asset);
+    beginLoad(key, src, width, height);
     return null;
   }
   return entry.resolved;
+}
+
+/**
+ * Resolve a raster asset's image for the compositor. Returns null while loading;
+ * triggers a load + notification on first request. SVG assets resolve to null
+ * here (they go through resolveSvg / the stroke renderer instead).
+ */
+export function resolveAssetImage(asset: Asset | undefined): ResolvedImage | null {
+  if (!asset || asset.type !== "image") return null;
+  return resolveImage(asset.id, asset.src ?? "", asset.width, asset.height);
+}
+
+/** Resolve a loaded hand sprite image by hand id. */
+export function resolveHandImage(handId: string): ResolvedImage | null {
+  const hand = getHand(handId);
+  if (!hand) return null;
+  return resolveImage(`hand:${hand.id}`, hand.src, hand.width, hand.height);
+}
+
+// ---- SVG flatten cache (pure parse, no async load) ----
+
+const svgCache = new Map<string, FlatSvg>();
+
+/** Parse + cache an SVG asset into a FlatSvg for the stroke renderer. */
+export function resolveSvg(asset: Asset | undefined): FlatSvg | null {
+  if (!asset || asset.type !== "svg" || !asset.svg) return null;
+  let flat = svgCache.get(asset.id);
+  if (!flat) {
+    flat = parseSvg(asset.svg);
+    svgCache.set(asset.id, flat);
+  }
+  return flat;
 }

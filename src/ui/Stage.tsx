@@ -4,9 +4,10 @@
 // Interaction math lives in engine/transform.ts (pure + unit-tested); this file
 // is the DOM/canvas glue and needs visual QC on a Mac.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEditor } from "../state/store";
-import { renderScene } from "../engine/compositor";
+import { renderSceneAt, type FrameOptions } from "../engine/compositor";
+import { computeTimeline, progressAt } from "../engine/timeline";
 import {
   elementCorners,
   pointInElement,
@@ -15,7 +16,7 @@ import {
 } from "../engine/transform";
 import { fitViewport, screenToStage, stageToScreen, type Viewport } from "../engine/view";
 import type { Element, Size, Transform, Vec2 } from "../engine/types";
-import { onImageLoaded, resolveAssetImage } from "./assets";
+import { onImageLoaded, resolveAssetImage, resolveHandImage, resolveSvg } from "./assets";
 
 const PADDING = 32;
 const HANDLE = 9; // half-size of a corner handle, screen px
@@ -37,6 +38,14 @@ export function Stage() {
   const selectElement = useEditor((s) => s.selectElement);
   const updateTransform = useEditor((s) => s.updateTransform);
   const assetById = useEditor((s) => s.assetById);
+  const playhead = useEditor((s) => s.playhead);
+  const isPlaying = useEditor((s) => s.isPlaying);
+
+  // While editing (stopped at t=0) every element shows fully so it can be
+  // positioned; while playing or scrubbed, render the animated state at the
+  // playhead. Same compositor either way.
+  const timeline = useMemo(() => computeTimeline(project), [project]);
+  const previewing = isPlaying || playhead > 0;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -98,14 +107,26 @@ export function Stage() {
     ctx.lineWidth = 1;
     ctx.strokeRect(tl.x + 0.5, tl.y + 0.5, w, h);
 
-    // Elements.
-    renderScene(ctx, activeScene, { vp, images: (id) => resolveAssetImage(assetById(id)) });
+    // Elements (animated via the engine compositor).
+    const opts: FrameOptions = {
+      vp,
+      canvas,
+      resolvers: {
+        image: (id) => resolveAssetImage(assetById(id)),
+        svg: (id) => resolveSvg(assetById(id)),
+        handImage: (id) => resolveHandImage(id),
+      },
+      progressOf: previewing ? (el) => progressAt(timeline, el, playhead) : () => 1,
+    };
+    renderSceneAt(ctx, activeScene, opts);
 
-    // Selection overlay.
-    const sel = activeScene.elements.find((e) => e.id === selectedId);
-    if (sel) drawSelection(ctx, sel, elementSize(sel), vp);
+    // Selection overlay (only while editing, not during playback).
+    if (!previewing) {
+      const sel = activeScene.elements.find((e) => e.id === selectedId);
+      if (sel) drawSelection(ctx, sel, elementSize(sel), vp);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, activeScene, selectedId, box]);
+  }, [project, activeScene, selectedId, box, playhead, isPlaying]);
 
   // ---- Pointer interaction ----
 

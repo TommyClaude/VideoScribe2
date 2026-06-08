@@ -83,6 +83,19 @@ export function translated(t: Transform, dx: number, dy: number): Transform {
 }
 
 /**
+ * Map a point in an asset's natural (pixel) space to world/stage coordinates,
+ * given the element transform and the asset's natural size. The asset box is
+ * centered on `t.x/t.y`. Used to place SVG strokes and the pen/hand.
+ */
+export function naturalToWorld(p: Vec2, t: Transform, size: Size): Vec2 {
+  const lx = (p.x - size.width / 2) * t.scale;
+  const ly = (p.y - size.height / 2) * t.scale;
+  const cos = Math.cos(deg2rad(t.rotation));
+  const sin = Math.sin(deg2rad(t.rotation));
+  return { x: t.x + lx * cos - ly * sin, y: t.y + lx * sin + ly * cos };
+}
+
+/**
  * Uniform scale derived from dragging a corner handle toward/away from the
  * (fixed) center. Returns a new transform with updated `scale`.
  */

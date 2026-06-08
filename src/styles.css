@@ -68,6 +68,7 @@ button.danger {
 
 input[type="number"],
 input[type="text"],
+select,
 .project-name {
   font: inherit;
   color: var(--text);
@@ -209,10 +210,28 @@ input[type="text"],
   background: var(--border);
 }
 
-/* ---- Timeline placeholder (Phase 3) ---- */
-.timeline-placeholder {
-  padding: 0.6rem 0.9rem;
+/* ---- Footer / transport ---- */
+.footer {
   background: var(--panel);
   border-top: 1px solid var(--border);
+}
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+}
+.transport button {
+  min-width: 38px;
+}
+.scrubber {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
   font-size: 0.8rem;
+  min-width: 130px;
+  text-align: right;
 }
