@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { Toolbar } from "./Toolbar";
+import { Library } from "./Library";
 import { Stage } from "./Stage";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { Transport } from "./Transport";
@@ -19,6 +20,7 @@ export function Editor() {
     <div className="editor">
       <Toolbar onExport={() => setExportOpen(true)} />
       <div className="workarea">
+        <Library />
         <Stage />
         <PropertiesPanel />
       </div>

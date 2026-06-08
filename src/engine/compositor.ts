@@ -14,6 +14,7 @@
 import { svgDrawAt } from "./drawing";
 import type { Pt } from "./geometry";
 import { getHand, handPlacement } from "./hands";
+import { defaultReveal, revealRegions } from "./reveal";
 import { deg2rad, naturalToWorld } from "./transform";
 import type { Element, Scene, Size } from "./types";
 import type { FlatStroke, FlatSvg } from "./svgParse";
@@ -161,6 +162,24 @@ function drawRasterElement(
   opts: FrameOptions,
 ): void {
   const size: Size = { width: img.width, height: img.height };
+
+  // style "draw": progressive "scan reveal" with the hand at the edge.
+  if (el.anim.style === "draw") {
+    const plan = revealRegions(el.reveal ?? defaultReveal(), progress, size.width, size.height);
+    withElementTransform(ctx, el, size, opts.vp, 1, () => {
+      if (plan.regions.length === 0) return;
+      ctx.save();
+      ctx.beginPath();
+      for (const r of plan.regions) ctx.rect(r.x, r.y, r.w, r.h);
+      ctx.clip();
+      ctx.drawImage(img.source, 0, 0, size.width, size.height);
+      ctx.restore();
+    });
+    if (plan.pen) drawHand(ctx, el, size, plan.pen, opts);
+    return;
+  }
+
+  // fade / pop
   const extraScale = el.anim.style === "pop" ? 0.6 + 0.4 * progress : 1;
   const alpha = el.anim.style === "pop" ? Math.min(1, progress * 2) : progress;
   ctx.save();

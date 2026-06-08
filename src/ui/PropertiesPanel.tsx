@@ -3,7 +3,8 @@
 
 import { useEditor } from "../state/store";
 import { HANDS } from "../engine/hands";
-import type { DrawStyle, EasingName } from "../engine/types";
+import { defaultReveal } from "../engine/reveal";
+import type { DrawStyle, EasingName, RevealParams } from "../engine/types";
 
 function round(n: number, p = 2): number {
   const f = 10 ** p;
@@ -49,11 +50,14 @@ export function PropertiesPanel() {
   }
 
   const updateAnim = useEditor((s) => s.updateAnim);
+  const updateReveal = useEditor((s) => s.updateReveal);
   const viewCam = useEditor((s) => s.viewCam);
   const setElementCamera = useEditor((s) => s.setElementCamera);
   const asset = assetById(selected.assetId);
   const t = selected.transform;
   const anim = selected.anim;
+  const isRaster = asset?.type === "image";
+  const reveal: RevealParams = selected.reveal ?? defaultReveal();
 
   return (
     <aside className="panel">
@@ -137,6 +141,34 @@ export function PropertiesPanel() {
             ))}
           </select>
         </label>
+
+        {isRaster && anim.style === "draw" && (
+          <>
+            <label className="field">
+              <span>Reveal direction</span>
+              <select
+                value={reveal.direction}
+                onChange={(e) =>
+                  updateReveal(selected.id, {
+                    direction: e.target.value as RevealParams["direction"],
+                  })
+                }
+              >
+                <option value="right">right</option>
+                <option value="left">left</option>
+                <option value="down">down</option>
+                <option value="up">up</option>
+                <option value="diagonal">diagonal</option>
+              </select>
+            </label>
+            <NumberField
+              label="Reveal bands"
+              value={reveal.rows}
+              step={1}
+              onChange={(v) => updateReveal(selected.id, { rows: Math.max(1, Math.round(v)) })}
+            />
+          </>
+        )}
       </div>
 
       <div className="group">

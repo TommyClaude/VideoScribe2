@@ -87,8 +87,51 @@ select,
 }
 .workarea {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 190px 1fr 280px;
   min-height: 0;
+}
+
+/* ---- Library panel ---- */
+.library {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 0.8rem;
+  overflow-y: auto;
+}
+.library h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1rem;
+}
+.lib-cat h3 {
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.lib-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+.lib-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.3rem;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lib-item:hover {
+  border-color: var(--accent);
+  background: #fff;
+}
+.lib-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* ---- Toolbar ---- */

@@ -9,9 +9,11 @@ import type {
   Element,
   ElementAnim,
   Project,
+  RevealParams,
   Scene,
   Transform,
 } from "../engine/types";
+import { defaultReveal } from "../engine/reveal";
 
 export type AudioKind = "music" | "voiceover";
 import { createElement, createProject, newId } from "../engine/factory";
@@ -40,6 +42,7 @@ interface EditorState {
   selectElement: (id: string | null) => void;
   updateTransform: (id: string, patch: Partial<Transform>) => void;
   updateAnim: (id: string, patch: Partial<ElementAnim>) => void;
+  updateReveal: (id: string, patch: Partial<RevealParams>) => void;
   removeElement: (id: string) => void;
   moveZ: (id: string, dir: ZDir) => void;
   moveDrawOrder: (id: string, dir: "earlier" | "later") => void;
@@ -150,6 +153,16 @@ export const useEditor = create<EditorState>((set, get) => ({
     set((s) => ({
       project: withActiveScene(s.project, s.activeSceneId, (sc) =>
         withElement(sc, id, (el) => ({ ...el, anim: { ...el.anim, ...patch } })),
+      ),
+    })),
+
+  updateReveal: (id, patch) =>
+    set((s) => ({
+      project: withActiveScene(s.project, s.activeSceneId, (sc) =>
+        withElement(sc, id, (el) => ({
+          ...el,
+          reveal: { ...(el.reveal ?? defaultReveal()), ...patch },
+        })),
       ),
     })),
 
