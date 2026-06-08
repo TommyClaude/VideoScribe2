@@ -375,3 +375,25 @@ select,
 .tl-handle:hover {
   background: rgba(255, 255, 255, 0.7);
 }
+.tl-handle-left {
+  right: auto;
+  left: 0;
+}
+
+/* ---- Timeline audio rows ---- */
+.tl-audio-row {
+  min-height: 40px;
+}
+.tl-audio-block {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  background: #2c5d4f;
+  border: 1px solid #3c8a72;
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: grab;
+}
+.tl-audio-block canvas {
+  pointer-events: none;
+}

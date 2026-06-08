@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import { useEditor } from "../state/store";
-import { computeTimeline } from "../engine/timeline";
+import { projectDuration } from "../engine/timeline";
 
 export function usePreviewClock() {
   const isPlaying = useEditor((s) => s.isPlaying);
@@ -15,7 +15,7 @@ export function usePreviewClock() {
 
   useEffect(() => {
     if (!isPlaying) return;
-    const duration = computeTimeline(project).duration;
+    const duration = projectDuration(project);
     let raf = 0;
     last.current = performance.now();
     const tick = (now: number) => {

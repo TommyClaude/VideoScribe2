@@ -4,6 +4,7 @@
 import { create } from "zustand";
 import type {
   Asset,
+  AudioTrack,
   CameraKeyframe,
   Element,
   ElementAnim,
@@ -11,6 +12,8 @@ import type {
   Scene,
   Transform,
 } from "../engine/types";
+
+export type AudioKind = "music" | "voiceover";
 import { createElement, createProject, newId } from "../engine/factory";
 
 export type ZDir = "front" | "back" | "forward" | "backward";
@@ -48,6 +51,8 @@ interface EditorState {
   setViewCam: (cam: CameraKeyframe) => void;
   fitView: () => void;
   setElementCamera: (id: string, cam: CameraKeyframe | null) => void;
+  setAudio: (kind: AudioKind, track: AudioTrack | null) => void;
+  updateAudio: (kind: AudioKind, patch: Partial<AudioTrack>) => void;
 }
 
 function centerCam(project: Project): CameraKeyframe {
@@ -195,6 +200,18 @@ export const useEditor = create<EditorState>((set, get) => ({
         withElement(sc, id, (el) => ({ ...el, camera: cam ?? undefined })),
       ),
     })),
+
+  setAudio: (kind, track) =>
+    set((s) => ({ project: { ...s.project, audio: { ...s.project.audio, [kind]: track } } })),
+
+  updateAudio: (kind, patch) =>
+    set((s) => {
+      const cur = s.project.audio[kind];
+      if (!cur) return {};
+      return {
+        project: { ...s.project, audio: { ...s.project.audio, [kind]: { ...cur, ...patch } } },
+      };
+    }),
 }));
 
 function totalElementCount(project: Project): number {

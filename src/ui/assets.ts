@@ -23,6 +23,12 @@ const MIME: Record<string, string> = {
   webp: "image/webp",
   bmp: "image/bmp",
   svg: "image/svg+xml",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  flac: "audio/flac",
 };
 
 function extOf(name: string): string {
@@ -118,6 +124,26 @@ export async function importImage(): Promise<Asset | null> {
   const url = URL.createObjectURL(file);
   const size = await loadImageSize(url);
   return { id: newId("asset"), type: "image", name: file.name, src: url, ...size };
+}
+
+/** Import an audio file (mp3/wav/…) as an audio asset (object URL + path). */
+export async function importAudio(): Promise<Asset | null> {
+  if (isTauri()) {
+    const path = await tauriOpen(["mp3", "wav", "m4a", "aac", "ogg", "flac"]);
+    if (!path) return null;
+    const bytes = await tauriReadBytes(path);
+    const mime = MIME[extOf(path)] ?? "audio/mpeg";
+    const ab = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    ) as ArrayBuffer;
+    const url = URL.createObjectURL(new Blob([ab], { type: mime }));
+    return { id: newId("asset"), type: "audio", name: baseName(path), path, src: url };
+  }
+  const file = await pickFile("audio/*");
+  if (!file) return null;
+  const url = URL.createObjectURL(file);
+  return { id: newId("asset"), type: "audio", name: file.name, src: url };
 }
 
 // ---- Image cache for rendering ----

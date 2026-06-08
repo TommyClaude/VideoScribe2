@@ -4,7 +4,9 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEditor } from "../state/store";
-import { importImage, importSvg } from "./assets";
+import type { AudioKind } from "../state/store";
+import { importAudio, importImage, importSvg } from "./assets";
+import { decodeAudioAsset } from "./audioEngine";
 
 export function Toolbar() {
   const name = useEditor((s) => s.project.meta.name);
@@ -12,6 +14,8 @@ export function Toolbar() {
   const setProjectName = useEditor((s) => s.setProjectName);
   const setBackground = useEditor((s) => s.setBackground);
   const addElementForAsset = useEditor((s) => s.addElementForAsset);
+  const addAsset = useEditor((s) => s.addAsset);
+  const setAudio = useEditor((s) => s.setAudio);
   const fitView = useEditor((s) => s.fitView);
 
   const [busy, setBusy] = useState(false);
@@ -32,6 +36,26 @@ export function Toolbar() {
     try {
       const asset = await importImage();
       if (asset) addElementForAsset(asset);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onImportAudio(kind: AudioKind) {
+    setBusy(true);
+    try {
+      const asset = await importAudio();
+      if (!asset) return;
+      const info = await decodeAudioAsset(asset);
+      asset.duration = info.duration;
+      addAsset(asset);
+      setAudio(kind, {
+        assetId: asset.id,
+        startTime: 0,
+        trimStart: 0,
+        trimEnd: null,
+        volume: 1,
+      });
     } finally {
       setBusy(false);
     }
@@ -63,6 +87,12 @@ export function Toolbar() {
       </button>
       <button onClick={onImportImage} disabled={busy}>
         + Image
+      </button>
+      <button onClick={() => onImportAudio("music")} disabled={busy}>
+        + Music
+      </button>
+      <button onClick={() => onImportAudio("voiceover")} disabled={busy}>
+        + Voice
       </button>
 
       <button className="ghost" onClick={fitView} title="Fit stage to view">

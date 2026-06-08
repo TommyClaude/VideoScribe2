@@ -6,6 +6,7 @@
 // holdDuration before the next begins. Pure + tested. The visual timeline UI
 // (Phase 3) is built on top of this.
 
+import { audioEndTime } from "./audio";
 import { elementDrawProgress } from "./drawing";
 import type { Element, Project } from "./types";
 
@@ -68,6 +69,13 @@ export function computeTimeline(project: Project): TimelineLayout {
     cursor = timing.holdEnd;
   });
   return { timings, byId, duration: cursor };
+}
+
+/** Total play/export duration: the later of the element timeline and audio. */
+export function projectDuration(project: Project, layout?: TimelineLayout): number {
+  const tl = layout ?? computeTimeline(project);
+  const durationOf = (id: string) => project.assets.find((a) => a.id === id)?.duration ?? 0;
+  return Math.max(tl.duration, audioEndTime(project, durationOf));
 }
 
 /** Element draw progress (0..1) at global time `t`, using its timing window. */

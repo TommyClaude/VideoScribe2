@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { useEditor } from "../state/store";
-import { computeTimeline } from "../engine/timeline";
+import { projectDuration } from "../engine/timeline";
 
 export function Transport() {
   const isPlaying = useEditor((s) => s.isPlaying);
@@ -12,7 +12,7 @@ export function Transport() {
   const setPlayhead = useEditor((s) => s.setPlayhead);
   const setPlaying = useEditor((s) => s.setPlaying);
 
-  const duration = useMemo(() => computeTimeline(project).duration, [project]);
+  const duration = useMemo(() => projectDuration(project), [project]);
   const max = Math.max(duration, 0.001);
 
   function play() {

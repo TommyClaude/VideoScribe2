@@ -55,6 +55,8 @@ export interface Asset {
   /** Natural pixel size, when known. */
   width?: number;
   height?: number;
+  /** Duration in seconds (audio assets). */
+  duration?: number;
 }
 
 export interface CameraKeyframe {

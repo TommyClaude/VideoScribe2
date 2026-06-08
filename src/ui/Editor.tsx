@@ -7,9 +7,11 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { Transport } from "./Transport";
 import { Timeline } from "./Timeline";
 import { usePreviewClock } from "./usePreviewClock";
+import { useAudioPlayback } from "./useAudioPlayback";
 
 export function Editor() {
   usePreviewClock();
+  useAudioPlayback();
   return (
     <div className="editor">
       <Toolbar />
