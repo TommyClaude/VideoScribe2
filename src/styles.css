@@ -397,3 +397,91 @@ select,
 .tl-audio-block canvas {
   pointer-events: none;
 }
+
+/* ---- Modal / export dialog ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal {
+  width: 460px;
+  max-width: calc(100vw - 2rem);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+}
+.modal h2 {
+  margin: 0 0 1rem;
+}
+.modal .group {
+  margin-bottom: 1rem;
+}
+.warn {
+  background: rgba(255, 180, 60, 0.12);
+  border: 1px solid rgba(255, 180, 60, 0.4);
+  color: #ffce80;
+  padding: 0.5rem 0.7rem;
+  border-radius: 7px;
+  font-size: 0.82rem;
+}
+.chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.7rem;
+}
+.chip small {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+.chip.active {
+  border-color: var(--accent);
+  background: rgba(76, 141, 255, 0.18);
+}
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.field-row input {
+  width: auto;
+}
+.export-progress {
+  margin: 0.5rem 0 1rem;
+}
+.progress-track {
+  height: 8px;
+  background: var(--panel-2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.modal-actions .danger {
+  width: auto;
+}

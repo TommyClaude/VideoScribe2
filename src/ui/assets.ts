@@ -217,6 +217,44 @@ export function resolveHandImage(handId: string): ResolvedImage | null {
   return resolveImage(`hand:${hand.id}`, hand.src, hand.width, hand.height);
 }
 
+/**
+ * Promise-based preloads used by the exporter so every frame can be rendered
+ * synchronously (all media in the cache before the render loop starts).
+ */
+function preload(key: string, src: string, width?: number, height?: number): Promise<ResolvedImage | null> {
+  const entry = cache.get(key);
+  if (entry?.status === "ready") return Promise.resolve(entry.resolved);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const r: ResolvedImage = {
+        source: img,
+        width: width ?? img.naturalWidth,
+        height: height ?? img.naturalHeight,
+      };
+      cache.set(key, { status: "ready", resolved: r });
+      notify();
+      resolve(r);
+    };
+    img.onerror = () => {
+      cache.set(key, { status: "error", resolved: null });
+      resolve(null);
+    };
+    img.src = src;
+  });
+}
+
+export function preloadImageAsset(asset: Asset): Promise<ResolvedImage | null> {
+  if (asset.type !== "image" || !asset.src) return Promise.resolve(null);
+  return preload(asset.id, asset.src, asset.width, asset.height);
+}
+
+export function preloadHandImage(handId: string): Promise<ResolvedImage | null> {
+  const hand = getHand(handId);
+  if (!hand) return Promise.resolve(null);
+  return preload(`hand:${hand.id}`, hand.src, hand.width, hand.height);
+}
+
 // ---- SVG flatten cache (pure parse, no async load) ----
 
 const svgCache = new Map<string, FlatSvg>();

@@ -1,20 +1,23 @@
 // Top-level editor layout: toolbar, stage, inspector, and the transport.
 // The full per-element timeline track is added in Phase 3.
 
+import { useState } from "react";
 import { Toolbar } from "./Toolbar";
 import { Stage } from "./Stage";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { Transport } from "./Transport";
 import { Timeline } from "./Timeline";
+import { ExportDialog } from "./ExportDialog";
 import { usePreviewClock } from "./usePreviewClock";
 import { useAudioPlayback } from "./useAudioPlayback";
 
 export function Editor() {
   usePreviewClock();
   useAudioPlayback();
+  const [exportOpen, setExportOpen] = useState(false);
   return (
     <div className="editor">
-      <Toolbar />
+      <Toolbar onExport={() => setExportOpen(true)} />
       <div className="workarea">
         <Stage />
         <PropertiesPanel />
@@ -23,6 +26,7 @@ export function Editor() {
         <Transport />
         <Timeline />
       </footer>
+      {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} />}
     </div>
   );
 }

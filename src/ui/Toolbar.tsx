@@ -7,16 +7,23 @@ import { useEditor } from "../state/store";
 import type { AudioKind } from "../state/store";
 import { importAudio, importImage, importSvg } from "./assets";
 import { decodeAudioAsset } from "./audioEngine";
+import { RATIO_PRESETS, type RatioName } from "../engine/exporter";
 
-export function Toolbar() {
+export function Toolbar(props: { onExport: () => void }) {
   const name = useEditor((s) => s.project.meta.name);
   const background = useEditor((s) => s.project.meta.background);
+  const canvasSize = useEditor((s) => s.project.meta.canvasSize);
   const setProjectName = useEditor((s) => s.setProjectName);
   const setBackground = useEditor((s) => s.setBackground);
+  const setCanvasSize = useEditor((s) => s.setCanvasSize);
   const addElementForAsset = useEditor((s) => s.addElementForAsset);
   const addAsset = useEditor((s) => s.addAsset);
   const setAudio = useEditor((s) => s.setAudio);
   const fitView = useEditor((s) => s.fitView);
+
+  const currentRatio = (Object.keys(RATIO_PRESETS) as RatioName[]).find(
+    (r) => RATIO_PRESETS[r].width === canvasSize.width && RATIO_PRESETS[r].height === canvasSize.height,
+  );
 
   const [busy, setBusy] = useState(false);
   const [ffmpeg, setFfmpeg] = useState<string>("");
@@ -99,6 +106,25 @@ export function Toolbar() {
         Fit
       </button>
 
+      <label className="bg-picker" title="Canvas size">
+        Size
+        <select
+          value={currentRatio ?? ""}
+          onChange={(e) => {
+            const r = e.target.value as RatioName;
+            const d = RATIO_PRESETS[r];
+            if (d) setCanvasSize(d.width, d.height);
+          }}
+        >
+          {!currentRatio && <option value="">custom</option>}
+          {(Object.keys(RATIO_PRESETS) as RatioName[]).map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className="bg-picker">
         BG
         <input
@@ -107,6 +133,8 @@ export function Toolbar() {
           onChange={(e) => setBackground(e.target.value)}
         />
       </label>
+
+      <button onClick={props.onExport}>Export</button>
 
       <button className="ghost" onClick={testFfmpeg} title="Phase 0 sidecar test">
         Test ffmpeg
