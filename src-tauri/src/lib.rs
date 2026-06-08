@@ -1,4 +1,5 @@
 use base64::Engine;
+use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
 
 /// Phase 0 sanity command: runs the bundled `ffmpeg` sidecar with `-version`
@@ -80,6 +81,45 @@ fn remove_export_dir(dir: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Write text to an absolute path (used for saving .scribe projects).
+#[tauri::command]
+fn save_text_file(path: String, contents: String) -> Result<(), String> {
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    std::fs::write(&path, contents).map_err(|e| e.to_string())
+}
+
+/// Read a text file (used for opening .scribe projects).
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+fn draft_file(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("draft.scribe.json"))
+}
+
+/// Auto-save the working project to the app data dir.
+#[tauri::command]
+fn save_draft(app: tauri::AppHandle, contents: String) -> Result<(), String> {
+    let path = draft_file(&app)?;
+    std::fs::write(path, contents).map_err(|e| e.to_string())
+}
+
+/// Load the auto-saved draft, if any.
+#[tauri::command]
+fn load_draft(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = draft_file(&app)?;
+    if path.exists() {
+        Ok(Some(std::fs::read_to_string(path).map_err(|e| e.to_string())?))
+    } else {
+        Ok(None)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -91,7 +131,11 @@ pub fn run() {
             run_ffmpeg,
             create_export_dir,
             write_frame,
-            remove_export_dir
+            remove_export_dir,
+            save_text_file,
+            read_text_file,
+            save_draft,
+            load_draft
         ])
         .run(tauri::generate_context!())
         .expect("error while running Scribely");

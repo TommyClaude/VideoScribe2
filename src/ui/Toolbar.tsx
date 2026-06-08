@@ -7,12 +7,17 @@ import { useEditor } from "../state/store";
 import type { AudioKind } from "../state/store";
 import { importAudio, importImage, importSvg } from "./assets";
 import { decodeAudioAsset } from "./audioEngine";
+import { openProject, saveProject } from "./projectIO";
 import { RATIO_PRESETS, type RatioName } from "../engine/exporter";
+import { TEMPLATES } from "../engine/templates";
+import { createProject } from "../engine/factory";
 
 export function Toolbar(props: { onExport: () => void }) {
+  const project = useEditor((s) => s.project);
   const name = useEditor((s) => s.project.meta.name);
   const background = useEditor((s) => s.project.meta.background);
   const canvasSize = useEditor((s) => s.project.meta.canvasSize);
+  const setProject = useEditor((s) => s.setProject);
   const setProjectName = useEditor((s) => s.setProjectName);
   const setBackground = useEditor((s) => s.setBackground);
   const setCanvasSize = useEditor((s) => s.setCanvasSize);
@@ -68,6 +73,27 @@ export function Toolbar(props: { onExport: () => void }) {
     }
   }
 
+  async function onOpen() {
+    setBusy(true);
+    try {
+      const p = await openProject();
+      if (p) setProject(p);
+    } catch (e) {
+      setFfmpeg(`open error: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSave() {
+    setBusy(true);
+    try {
+      await saveProject(project);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function testFfmpeg() {
     try {
       const out = await invoke<string>("ffmpeg_version");
@@ -86,6 +112,32 @@ export function Toolbar(props: { onExport: () => void }) {
         onChange={(e) => setProjectName(e.target.value)}
         aria-label="project name"
       />
+
+      <button className="ghost" onClick={() => setProject(createProject())} disabled={busy}>
+        New
+      </button>
+      <button className="ghost" onClick={onOpen} disabled={busy}>
+        Open
+      </button>
+      <button className="ghost" onClick={onSave} disabled={busy}>
+        Save
+      </button>
+      <select
+        className="template-select"
+        value=""
+        onChange={(e) => {
+          const def = TEMPLATES.find((t) => t.id === e.target.value);
+          if (def) setProject(def.build());
+        }}
+        title="Load a template"
+      >
+        <option value="">Template…</option>
+        {TEMPLATES.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
 
       <div className="spacer" />
 

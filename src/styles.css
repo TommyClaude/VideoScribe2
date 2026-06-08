@@ -148,7 +148,10 @@ select,
   color: var(--accent);
 }
 .project-name {
-  width: 220px;
+  width: 200px;
+}
+.toolbar select {
+  width: auto;
 }
 .spacer {
   flex: 1;

@@ -11,10 +11,12 @@ import { Timeline } from "./Timeline";
 import { ExportDialog } from "./ExportDialog";
 import { usePreviewClock } from "./usePreviewClock";
 import { useAudioPlayback } from "./useAudioPlayback";
+import { useAutosave } from "./useAutosave";
 
 export function Editor() {
   usePreviewClock();
   useAudioPlayback();
+  useAutosave();
   const [exportOpen, setExportOpen] = useState(false);
   return (
     <div className="editor">
