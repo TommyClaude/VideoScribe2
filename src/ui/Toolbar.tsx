@@ -12,7 +12,7 @@ import { RATIO_PRESETS, type RatioName } from "../engine/exporter";
 import { TEMPLATES } from "../engine/templates";
 import { createProject } from "../engine/factory";
 
-export function Toolbar(props: { onExport: () => void }) {
+export function Toolbar(props: { onExport: () => void; onAi: () => void; onSettings: () => void }) {
   const project = useEditor((s) => s.project);
   const name = useEditor((s) => s.project.meta.name);
   const background = useEditor((s) => s.project.meta.background);
@@ -186,7 +186,13 @@ export function Toolbar(props: { onExport: () => void }) {
         />
       </label>
 
+      <button className="ghost" onClick={props.onAi}>
+        AI
+      </button>
       <button onClick={props.onExport}>Export</button>
+      <button className="ghost" onClick={props.onSettings} title="Settings" aria-label="settings">
+        ⚙
+      </button>
 
       <button className="ghost" onClick={testFfmpeg} title="Phase 0 sidecar test">
         Test ffmpeg

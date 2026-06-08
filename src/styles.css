@@ -68,6 +68,8 @@ button.danger {
 
 input[type="number"],
 input[type="text"],
+input[type="password"],
+textarea,
 select,
 .project-name {
   font: inherit;
@@ -530,4 +532,19 @@ select,
 }
 .modal-actions .danger {
   width: auto;
+}
+.ai-script {
+  margin-top: 0.5rem;
+  resize: vertical;
+  font-size: 0.85rem;
+}
+.ok-note {
+  color: var(--ok);
+  font-size: 0.85rem;
+}
+.small {
+  font-size: 0.75rem;
+}
+.template-select {
+  max-width: 130px;
 }
