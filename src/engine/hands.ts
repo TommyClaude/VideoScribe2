@@ -20,22 +20,34 @@ const W = 240;
 const H = 300;
 const TIP: Vec2 = { x: 30, y: 286 };
 
+interface PenStyle {
+  pen: string;
+  penHi: string;
+  skin: string;
+  skinEdge: string;
+  sleeve: string;
+  penWidth?: number;
+  tipColor?: string;
+  tipR?: number;
+}
+
 /** Build a hand+pen SVG with the given pen and skin colors. */
-function handSvg(penColor: string, penHi: string, skin: string, skinEdge: string, sleeve: string): string {
+function handSvg(p: PenStyle): string {
+  const pw = p.penWidth ?? 22;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">` +
     // forearm / sleeve
-    `<rect x="150" y="150" width="120" height="170" rx="34" fill="${sleeve}"/>` +
+    `<rect x="150" y="150" width="120" height="170" rx="34" fill="${p.sleeve}"/>` +
     // hand / fist
-    `<g fill="${skin}" stroke="${skinEdge}" stroke-width="3">` +
+    `<g fill="${p.skin}" stroke="${p.skinEdge}" stroke-width="3">` +
     `<ellipse cx="178" cy="158" rx="60" ry="46"/>` +
     `<rect x="138" y="120" width="80" height="46" rx="22"/>` +
     `<rect x="150" y="150" width="70" height="70" rx="26"/>` +
     `</g>` +
-    // pen body + highlight + dark tip
-    `<line x1="${TIP.x}" y1="${TIP.y}" x2="158" y2="118" stroke="${penColor}" stroke-width="22" stroke-linecap="round"/>` +
-    `<line x1="44" y1="270" x2="150" y2="120" stroke="${penHi}" stroke-width="7" stroke-linecap="round"/>` +
-    `<circle cx="${TIP.x}" cy="${TIP.y}" r="7" fill="#16223b"/>` +
+    // pen body + highlight + tip
+    `<line x1="${TIP.x}" y1="${TIP.y}" x2="158" y2="118" stroke="${p.pen}" stroke-width="${pw}" stroke-linecap="round"/>` +
+    `<line x1="44" y1="270" x2="150" y2="120" stroke="${p.penHi}" stroke-width="7" stroke-linecap="round"/>` +
+    `<circle cx="${TIP.x}" cy="${TIP.y}" r="${p.tipR ?? 7}" fill="${p.tipColor ?? "#16223b"}"/>` +
     `</svg>`
   );
 }
@@ -49,9 +61,26 @@ function makeHand(id: string, name: string, svg: string): HandDef {
 }
 
 export const HANDS: HandDef[] = [
-  makeHand("default", "Hand · pen (light)", handSvg("#2f6fe0", "#7ea8f2", "#f1c9a5", "#d9a877", "#3a4a66")),
-  makeHand("dark", "Hand · pen (dark skin)", handSvg("#2f6fe0", "#7ea8f2", "#8d5a3c", "#6e4631", "#2b3242")),
-  makeHand("marker", "Hand · marker", handSvg("#e0562f", "#f2a07e", "#f1c9a5", "#d9a877", "#3a4a66")),
+  makeHand(
+    "default",
+    "Pen · light skin",
+    handSvg({ pen: "#2f6fe0", penHi: "#7ea8f2", skin: "#f1c9a5", skinEdge: "#d9a877", sleeve: "#3a4a66" }),
+  ),
+  makeHand(
+    "dark",
+    "Pen · dark skin",
+    handSvg({ pen: "#2f6fe0", penHi: "#7ea8f2", skin: "#8d5a3c", skinEdge: "#6e4631", sleeve: "#2b3242" }),
+  ),
+  makeHand(
+    "marker",
+    "Marker · light skin",
+    handSvg({ pen: "#e0562f", penHi: "#f2a07e", skin: "#f1c9a5", skinEdge: "#d9a877", sleeve: "#3a4a66", penWidth: 30, tipColor: "#a83518", tipR: 11 }),
+  ),
+  makeHand(
+    "brush",
+    "Brush · medium skin",
+    handSvg({ pen: "#5a3b22", penHi: "#9c6f47", skin: "#c98d5a", skinEdge: "#a06a3d", sleeve: "#384a2f", penWidth: 26, tipColor: "#1d1d1d", tipR: 13 }),
+  ),
 ];
 
 const BY_ID = new Map(HANDS.map((h) => [h.id, h]));

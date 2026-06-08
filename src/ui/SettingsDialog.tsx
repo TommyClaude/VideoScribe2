@@ -72,6 +72,16 @@ export function SettingsDialog(props: { onClose: () => void }) {
           </label>
         </div>
 
+        <div className="group">
+          <h3>About</h3>
+          <p className="muted small">
+            <strong>Scribely</strong> v0.1.0 — whiteboard animation cho macOS (Apple Silicon).
+            <br />
+            Phím tắt: Space = play/pause · Delete = xoá phần tử · Esc = bỏ chọn ·
+            cuộn = zoom · kéo nền = pan.
+          </p>
+        </div>
+
         <div className="modal-actions">
           <button onClick={props.onClose}>Đóng</button>
         </div>

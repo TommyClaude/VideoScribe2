@@ -14,11 +14,13 @@ import { SettingsDialog } from "./SettingsDialog";
 import { usePreviewClock } from "./usePreviewClock";
 import { useAudioPlayback } from "./useAudioPlayback";
 import { useAutosave } from "./useAutosave";
+import { useKeyboard } from "./useKeyboard";
 
 export function Editor() {
   usePreviewClock();
   useAudioPlayback();
   useAutosave();
+  useKeyboard();
   const [exportOpen, setExportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
