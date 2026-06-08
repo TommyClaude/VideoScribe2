@@ -196,6 +196,14 @@ select,
   font-size: 0.78rem;
   color: var(--muted);
 }
+.cam-note {
+  font-size: 0.78rem;
+  margin: 0 0 0.5rem;
+}
+.cam-hint {
+  font-size: 0.72rem;
+  margin: 0.5rem 0 0;
+}
 .btn-row {
   display: flex;
   gap: 0.35rem;

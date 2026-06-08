@@ -8,27 +8,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEditor } from "../state/store";
 import { renderSceneAt, type FrameOptions } from "../engine/compositor";
 import { computeTimeline, progressAt } from "../engine/timeline";
+import { cameraAt, cameraKeyframes, zoomAround } from "../engine/camera";
 import {
   elementCorners,
   pointInElement,
   rotationFromHandle,
   scaleFromHandle,
 } from "../engine/transform";
-import { fitViewport, screenToStage, stageToScreen, type Viewport } from "../engine/view";
-import type { Element, Size, Transform, Vec2 } from "../engine/types";
+import { cameraViewport, screenToStage, stageToScreen, type Viewport } from "../engine/view";
+import type { CameraKeyframe, Element, Size, Transform, Vec2 } from "../engine/types";
 import { onImageLoaded, resolveAssetImage, resolveHandImage, resolveSvg } from "./assets";
 
-const PADDING = 32;
 const HANDLE = 9; // half-size of a corner handle, screen px
 const HANDLE_HIT = 12; // hit tolerance, screen px
 const ROTATE_OFFSET = 28; // distance of rotate handle above the top edge
 
-type DragMode = "none" | "move" | "scale" | "rotate";
+type DragMode = "none" | "move" | "scale" | "rotate" | "pan";
 
 interface DragState {
   mode: DragMode;
   start: Vec2; // stage-space pointer at drag start
   startTransform: Transform;
+  startScreen: Vec2; // screen-space pointer at drag start (for pan)
+  startCam: CameraKeyframe; // viewCam at drag start (for pan)
 }
 
 export function Stage() {
@@ -40,18 +42,21 @@ export function Stage() {
   const assetById = useEditor((s) => s.assetById);
   const playhead = useEditor((s) => s.playhead);
   const isPlaying = useEditor((s) => s.isPlaying);
+  const viewCam = useEditor((s) => s.viewCam);
+  const setViewCam = useEditor((s) => s.setViewCam);
 
   // While editing (stopped at t=0) every element shows fully so it can be
   // positioned; while playing or scrubbed, render the animated state at the
   // playhead. Same compositor either way.
   const timeline = useMemo(() => computeTimeline(project), [project]);
+  const camKeys = useMemo(() => cameraKeyframes(project, timeline), [project, timeline]);
   const previewing = isPlaying || playhead > 0;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [box, setBox] = useState<Size>({ width: 800, height: 450 });
   const [, setImgTick] = useState(0);
-  const drag = useRef<DragState>({ mode: "none", start: { x: 0, y: 0 }, startTransform: zeroT() });
+  const drag = useRef<DragState>(idleDrag());
 
   const canvas = project.meta.canvasSize;
 
@@ -78,7 +83,12 @@ export function Stage() {
   // Redraw when images finish loading.
   useEffect(() => onImageLoaded(() => setImgTick((n) => n + 1)), []);
 
-  const viewport = (): Viewport => fitViewport(canvas, box, PADDING);
+  // Edit mode frames the stage with the editor view camera; preview mode uses
+  // the animated camera path. The compositor is identical for both.
+  const viewport = (): Viewport =>
+    previewing
+      ? cameraViewport(canvas, box, cameraAt(camKeys, playhead))
+      : cameraViewport(canvas, box, viewCam);
 
   // Draw.
   useEffect(() => {
@@ -126,7 +136,7 @@ export function Stage() {
       if (sel) drawSelection(ctx, sel, elementSize(sel), vp);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, activeScene, selectedId, box, playhead, isPlaying]);
+  }, [project, activeScene, selectedId, box, playhead, isPlaying, viewCam]);
 
   // ---- Pointer interaction ----
 
@@ -143,21 +153,23 @@ export function Stage() {
   }
 
   function onPointerDown(e: React.PointerEvent) {
+    if (previewing) return; // no editing during playback/scrub
     const screen = pointerScreen(e);
     const stage = pointerStage(e);
     const vp = viewport();
     const sel = activeScene.elements.find((el) => el.id === selectedId);
+    const base = { start: stage, startScreen: screen, startCam: viewCam };
 
     // 1) handles of the currently selected element
     if (sel) {
       const handles = handlePositions(sel, elementSize(sel), vp);
       if (dist(screen, handles.rotate) <= HANDLE_HIT) {
-        drag.current = { mode: "rotate", start: stage, startTransform: { ...sel.transform } };
+        drag.current = { ...base, mode: "rotate", startTransform: { ...sel.transform } };
         return;
       }
       for (const c of handles.corners) {
         if (dist(screen, c) <= HANDLE_HIT) {
-          drag.current = { mode: "scale", start: stage, startTransform: { ...sel.transform } };
+          drag.current = { ...base, mode: "scale", startTransform: { ...sel.transform } };
           return;
         }
       }
@@ -168,19 +180,34 @@ export function Stage() {
     const hit = ordered.find((el) => pointInElement(stage, el.transform, elementSize(el)));
     if (hit) {
       selectElement(hit.id);
-      drag.current = { mode: "move", start: stage, startTransform: { ...hit.transform } };
+      drag.current = { ...base, mode: "move", startTransform: { ...hit.transform } };
       return;
     }
 
-    // 3) empty space
+    // 3) empty space: deselect + pan the editor view
     selectElement(null);
-    drag.current = { mode: "none", start: stage, startTransform: zeroT() };
+    drag.current = { ...base, mode: "pan", startTransform: zeroT() };
   }
 
   useEffect(() => {
     function onMove(e: PointerEvent) {
       const d = drag.current;
-      if (d.mode === "none" || !selectedId) return;
+      if (d.mode === "none") return;
+
+      // Panning the editor view (no element involved).
+      if (d.mode === "pan") {
+        const screen = pointerScreen(e);
+        const base = Math.min(box.width / canvas.width, box.height / canvas.height);
+        const scale = base * d.startCam.zoom || 1;
+        setViewCam({
+          x: d.startCam.x - (screen.x - d.startScreen.x) / scale,
+          y: d.startCam.y - (screen.y - d.startScreen.y) / scale,
+          zoom: d.startCam.zoom,
+        });
+        return;
+      }
+
+      if (!selectedId) return;
       const stage = pointerStage(e);
       const sel = activeScene.elements.find((el) => el.id === selectedId);
       if (!sel) return;
@@ -213,6 +240,23 @@ export function Stage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, activeScene, box, project]);
+
+  // Wheel = zoom the editor view around the cursor (editing only).
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    function onWheel(e: WheelEvent) {
+      if (previewing) return;
+      e.preventDefault();
+      const r = cv!.getBoundingClientRect();
+      const cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setViewCam(zoomAround(viewCam, canvas, box, cursor, factor));
+    }
+    cv.addEventListener("wheel", onWheel, { passive: false });
+    return () => cv.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewing, viewCam, box, project]);
 
   return (
     <div className="stage" ref={containerRef}>
@@ -273,6 +317,15 @@ function drawSelection(
 
 function zeroT(): Transform {
   return { x: 0, y: 0, scale: 1, rotation: 0, z: 0 };
+}
+function idleDrag(): DragState {
+  return {
+    mode: "none",
+    start: { x: 0, y: 0 },
+    startTransform: zeroT(),
+    startScreen: { x: 0, y: 0 },
+    startCam: { x: 0, y: 0, zoom: 1 },
+  };
 }
 function dist(a: Vec2, b: Vec2): number {
   return Math.hypot(a.x - b.x, a.y - b.y);

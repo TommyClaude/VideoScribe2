@@ -4,6 +4,7 @@
 import { create } from "zustand";
 import type {
   Asset,
+  CameraKeyframe,
   Element,
   ElementAnim,
   Project,
@@ -21,6 +22,8 @@ interface EditorState {
   /** Timeline playhead (seconds) — used from Phase 3 on. */
   playhead: number;
   isPlaying: boolean;
+  /** Editor view camera (pan/zoom of the stage while editing). */
+  viewCam: CameraKeyframe;
 
   // ---- selectors (cheap helpers) ----
   activeScene: () => Scene;
@@ -42,6 +45,13 @@ interface EditorState {
   setProjectName: (name: string) => void;
   setPlayhead: (t: number) => void;
   setPlaying: (playing: boolean) => void;
+  setViewCam: (cam: CameraKeyframe) => void;
+  fitView: () => void;
+  setElementCamera: (id: string, cam: CameraKeyframe | null) => void;
+}
+
+function centerCam(project: Project): CameraKeyframe {
+  return { x: project.meta.canvasSize.width / 2, y: project.meta.canvasSize.height / 2, zoom: 1 };
 }
 
 const initialProject = createProject();
@@ -78,6 +88,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   selectedElementId: null,
   playhead: 0,
   isPlaying: false,
+  viewCam: centerCam(initialProject),
 
   activeScene: () => {
     const { project, activeSceneId } = get();
@@ -97,6 +108,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedElementId: null,
       playhead: 0,
       isPlaying: false,
+      viewCam: centerCam(project),
     }),
 
   addAsset: (asset) =>
@@ -174,6 +186,15 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   setPlayhead: (t) => set({ playhead: Math.max(0, t) }),
   setPlaying: (playing) => set({ isPlaying: playing }),
+
+  setViewCam: (cam) => set({ viewCam: cam }),
+  fitView: () => set((s) => ({ viewCam: centerCam(s.project) })),
+  setElementCamera: (id, cam) =>
+    set((s) => ({
+      project: withActiveScene(s.project, s.activeSceneId, (sc) =>
+        withElement(sc, id, (el) => ({ ...el, camera: cam ?? undefined })),
+      ),
+    })),
 }));
 
 function totalElementCount(project: Project): number {

@@ -49,6 +49,8 @@ export function PropertiesPanel() {
   }
 
   const updateAnim = useEditor((s) => s.updateAnim);
+  const viewCam = useEditor((s) => s.viewCam);
+  const setElementCamera = useEditor((s) => s.setElementCamera);
   const asset = assetById(selected.assetId);
   const t = selected.transform;
   const anim = selected.anim;
@@ -135,6 +137,29 @@ export function PropertiesPanel() {
             ))}
           </select>
         </label>
+      </div>
+
+      <div className="group">
+        <h3>Camera</h3>
+        <p className="muted cam-note">
+          {selected.camera
+            ? `Target ${Math.round(selected.camera.x)}, ${Math.round(selected.camera.y)} · zoom ${selected.camera.zoom.toFixed(2)}`
+            : "Bám camera của scene (chưa đặt riêng)."}
+        </p>
+        <div className="btn-row">
+          <button onClick={() => setElementCamera(selected.id, { ...viewCam })}>
+            Set to view
+          </button>
+          <button
+            disabled={!selected.camera}
+            onClick={() => setElementCamera(selected.id, null)}
+          >
+            Clear
+          </button>
+        </div>
+        <p className="muted cam-hint">
+          Cuộn để zoom, kéo nền để pan, rồi "Set to view". Play để xem camera lia.
+        </p>
       </div>
 
       <div className="group">

@@ -12,6 +12,7 @@ export function Toolbar() {
   const setProjectName = useEditor((s) => s.setProjectName);
   const setBackground = useEditor((s) => s.setBackground);
   const addElementForAsset = useEditor((s) => s.addElementForAsset);
+  const fitView = useEditor((s) => s.fitView);
 
   const [busy, setBusy] = useState(false);
   const [ffmpeg, setFfmpeg] = useState<string>("");
@@ -62,6 +63,10 @@ export function Toolbar() {
       </button>
       <button onClick={onImportImage} disabled={busy}>
         + Image
+      </button>
+
+      <button className="ghost" onClick={fitView} title="Fit stage to view">
+        Fit
       </button>
 
       <label className="bg-picker">
