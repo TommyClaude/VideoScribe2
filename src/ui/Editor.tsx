@@ -13,14 +13,14 @@ import { AiDialog } from "./AiDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { usePreviewClock } from "./usePreviewClock";
 import { useAudioPlayback } from "./useAudioPlayback";
-import { useAutosave } from "./useAutosave";
+import { useDraft } from "./useAutosave";
 import { useKeyboard } from "./useKeyboard";
 
 export function Editor() {
   usePreviewClock();
   useAudioPlayback();
-  useAutosave();
   useKeyboard();
+  const draft = useDraft();
   const [exportOpen, setExportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -40,6 +40,15 @@ export function Editor() {
         <Transport />
         <Timeline />
       </footer>
+      {draft.pending && (
+        <div className="restore-banner">
+          <span>Có bản nháp phiên làm việc trước. Khôi phục?</span>
+          <button onClick={draft.restore}>Khôi phục</button>
+          <button className="ghost" onClick={draft.dismiss}>
+            Bắt đầu mới
+          </button>
+        </div>
+      )}
       {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} />}
       {aiOpen && (
         <AiDialog
