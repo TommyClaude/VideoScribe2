@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+#
+# fetch-ffmpeg — download a static ffmpeg binary for the Tauri sidecar.
+#
+# Tauri expects external binaries to be named with a target-triple suffix. On
+# Apple Silicon that is:
+#
+#     src-tauri/binaries/ffmpeg-aarch64-apple-darwin
+#
+# This binary is gitignored and must be fetched on each machine / CI run before
+# `tauri build`.
+#
+# Defaults to a known static macOS arm64 build. Override the source with:
+#     FFMPEG_URL=<url> npm run fetch-ffmpeg
+# Force re-download with FORCE=1. The downloaded file may be a raw executable,
+# a .gz, or a .zip — this script sniffs and handles all three.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEST_DIR="$ROOT_DIR/src-tauri/binaries"
+
+# Default Tauri target triple is the host's. Allow override for cross builds.
+TARGET_TRIPLE="${FFMPEG_TARGET_TRIPLE:-aarch64-apple-darwin}"
+DEST="$DEST_DIR/ffmpeg-${TARGET_TRIPLE}"
+
+# Stable, versioned source (raw executable assets per platform/arch).
+FFMPEG_VERSION_TAG="${FFMPEG_VERSION_TAG:-b6.0}"
+DEFAULT_URL="https://github.com/eugeneware/ffmpeg-static/releases/download/${FFMPEG_VERSION_TAG}/ffmpeg-darwin-arm64"
+URL="${FFMPEG_URL:-$DEFAULT_URL}"
+
+mkdir -p "$DEST_DIR"
+
+# `tauri-build` validates that the external binary exists for the *host* target
+# triple at compile time (even for `cargo check`). On a non-macOS dev/CI host we
+# never run the real app, so drop a gitignored placeholder for the host triple
+# to let `cargo check` succeed. This is skipped on macOS where the real binary
+# is required. Pass STUB_HOST=0 to disable.
+HOST_TRIPLE="$(rustc -vV 2>/dev/null | sed -n 's/^host: //p' || true)"
+if [[ "${STUB_HOST:-1}" == "1" && -n "$HOST_TRIPLE" && "$HOST_TRIPLE" != *"apple-darwin"* ]]; then
+  HOST_STUB="$DEST_DIR/ffmpeg-${HOST_TRIPLE}"
+  if [[ ! -f "$HOST_STUB" ]]; then
+    cat > "$HOST_STUB" <<'EOF'
+#!/bin/sh
+echo "ffmpeg sidecar placeholder (non-macOS host) — not a real binary" >&2
+exit 1
+EOF
+    chmod +x "$HOST_STUB"
+    echo "• created host placeholder for cargo check: $HOST_STUB"
+  fi
+fi
+
+if [[ -f "$DEST" && "${FORCE:-0}" != "1" ]]; then
+  echo "✓ ffmpeg sidecar already present: $DEST"
+  echo "  (set FORCE=1 to re-download)"
+  exit 0
+fi
+
+echo "→ Downloading ffmpeg for ${TARGET_TRIPLE}"
+echo "  from: $URL"
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+RAW="$TMP/download"
+if command -v curl >/dev/null 2>&1; then
+  curl -fSL --retry 4 --retry-delay 2 -o "$RAW" "$URL"
+elif command -v wget >/dev/null 2>&1; then
+  wget -O "$RAW" "$URL"
+else
+  echo "✗ Need curl or wget to download ffmpeg." >&2
+  exit 1
+fi
+
+# Sniff the downloaded payload and extract an ffmpeg executable.
+KIND="$(file -b "$RAW" 2>/dev/null || echo unknown)"
+echo "  payload: $KIND"
+
+case "$KIND" in
+  *Zip*archive*|*"Zip archive"*)
+    unzip -o -q "$RAW" -d "$TMP/unz"
+    FOUND="$(find "$TMP/unz" -type f -name 'ffmpeg*' ! -name '*.zip' | head -n1)"
+    [[ -n "$FOUND" ]] || { echo "✗ No ffmpeg found in zip." >&2; exit 1; }
+    cp "$FOUND" "$DEST"
+    ;;
+  *gzip*compressed*)
+    gunzip -c "$RAW" > "$DEST"
+    ;;
+  *)
+    # Assume a raw executable (Mach-O / ELF / etc.).
+    cp "$RAW" "$DEST"
+    ;;
+esac
+
+chmod +x "$DEST"
+
+echo "✓ ffmpeg sidecar ready: $DEST"
+file -b "$DEST" 2>/dev/null || true

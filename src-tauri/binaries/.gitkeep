@@ -1,0 +1,2 @@
+# ffmpeg sidecar binaries live here but are gitignored.
+# Run `npm run fetch-ffmpeg` to populate ffmpeg-aarch64-apple-darwin.

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# ffmpeg sidecar binaries (downloaded via scripts/fetch-ffmpeg, NEVER committed)
+src-tauri/binaries/ffmpeg-*
+!src-tauri/binaries/.gitkeep
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test / coverage
+coverage/
