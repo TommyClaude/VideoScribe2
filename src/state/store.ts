@@ -36,6 +36,7 @@ interface EditorState {
   updateAnim: (id: string, patch: Partial<ElementAnim>) => void;
   removeElement: (id: string) => void;
   moveZ: (id: string, dir: ZDir) => void;
+  moveDrawOrder: (id: string, dir: "earlier" | "later") => void;
   setBackground: (color: string) => void;
   setCanvasSize: (width: number, height: number) => void;
   setProjectName: (name: string) => void;
@@ -152,6 +153,14 @@ export const useEditor = create<EditorState>((set, get) => ({
       })),
     })),
 
+  moveDrawOrder: (id, dir) =>
+    set((s) => ({
+      project: withActiveScene(s.project, s.activeSceneId, (sc) => ({
+        ...sc,
+        elements: reorderByDrawOrder(sc.elements, id, dir),
+      })),
+    })),
+
   setBackground: (color) =>
     set((s) => ({ project: { ...s.project, meta: { ...s.project.meta, background: color } } })),
 
@@ -188,6 +197,28 @@ export function reorderZ(elements: Element[], id: string, dir: ZDir): Element[] 
   return elements.map((e) => ({
     ...e,
     transform: { ...e.transform, z: order.get(e.id) ?? e.transform.z },
+  }));
+}
+
+/** Pure drawOrder reordering used by moveDrawOrder (also unit-tested). */
+export function reorderByDrawOrder(
+  elements: Element[],
+  id: string,
+  dir: "earlier" | "later",
+): Element[] {
+  const sorted = [...elements].sort((a, b) => a.anim.drawOrder - b.anim.drawOrder);
+  const idx = sorted.findIndex((e) => e.id === id);
+  if (idx < 0) return elements;
+  let target = dir === "earlier" ? idx - 1 : idx + 1;
+  if (target < 0 || target >= sorted.length) target = idx;
+  if (target !== idx) {
+    const [moved] = sorted.splice(idx, 1);
+    sorted.splice(target, 0, moved);
+  }
+  const order = new Map(sorted.map((e, i) => [e.id, i]));
+  return elements.map((e) => ({
+    ...e,
+    anim: { ...e.anim, drawOrder: order.get(e.id) ?? e.anim.drawOrder },
   }));
 }
 

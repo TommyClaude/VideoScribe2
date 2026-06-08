@@ -235,3 +235,135 @@ select,
   min-width: 130px;
   text-align: right;
 }
+
+/* ---- Timeline ---- */
+.timeline {
+  max-height: 230px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: #202026;
+}
+.tl-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #2c2c34;
+  min-height: 34px;
+}
+.tl-row.selected {
+  background: rgba(76, 141, 255, 0.12);
+}
+.tl-ruler-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #26262e;
+}
+.tl-label {
+  width: 150px;
+  flex: 0 0 150px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.4rem;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+.tl-corner {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.tl-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.tl-ord {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+.tl-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.tl-ruler {
+  height: 28px;
+  cursor: pointer;
+}
+.tl-tick {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-left: 1px solid #3a3a44;
+  padding-left: 3px;
+}
+.tl-tick span {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+.tl-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.tl-rows {
+  position: relative;
+}
+.tl-empty {
+  padding: 0.8rem;
+  font-size: 0.82rem;
+}
+.tl-block {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  display: flex;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.tl-draw,
+.tl-hold {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.tl-draw {
+  background: var(--accent);
+  min-width: 3px;
+}
+.tl-hold {
+  background: #4a4a58;
+}
+.tl-dur {
+  font-size: 0.62rem;
+  color: #fff;
+  padding-left: 5px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.tl-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: ew-resize;
+  background: rgba(255, 255, 255, 0.35);
+}
+.tl-handle:hover {
+  background: rgba(255, 255, 255, 0.7);
+}

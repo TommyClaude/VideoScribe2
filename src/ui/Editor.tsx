@@ -5,6 +5,7 @@ import { Toolbar } from "./Toolbar";
 import { Stage } from "./Stage";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { Transport } from "./Transport";
+import { Timeline } from "./Timeline";
 import { usePreviewClock } from "./usePreviewClock";
 
 export function Editor() {
@@ -18,6 +19,7 @@ export function Editor() {
       </div>
       <footer className="footer">
         <Transport />
+        <Timeline />
       </footer>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reorderZ, normalizeZ } from "./store";
+import { reorderZ, normalizeZ, reorderByDrawOrder } from "./store";
 import type { Element } from "../engine/types";
 
 function el(id: string, z: number): Element {
@@ -40,6 +40,31 @@ describe("reorderZ", () => {
 
   it("ignores unknown ids", () => {
     expect(zOrder(reorderZ(base, "zzz", "front"))).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("reorderByDrawOrder", () => {
+  function elo(id: string, order: number): Element {
+    const e = el(id, 0);
+    e.anim.drawOrder = order;
+    return e;
+  }
+  const base = [elo("a", 0), elo("b", 1), elo("c", 2)];
+  function drawOrderSeq(els: Element[]): string[] {
+    return [...els].sort((x, y) => x.anim.drawOrder - y.anim.drawOrder).map((e) => e.id);
+  }
+
+  it("moves an element earlier", () => {
+    expect(drawOrderSeq(reorderByDrawOrder(base, "c", "earlier"))).toEqual(["a", "c", "b"]);
+  });
+
+  it("moves an element later", () => {
+    expect(drawOrderSeq(reorderByDrawOrder(base, "a", "later"))).toEqual(["b", "a", "c"]);
+  });
+
+  it("is a no-op at the boundaries", () => {
+    expect(drawOrderSeq(reorderByDrawOrder(base, "a", "earlier"))).toEqual(["a", "b", "c"]);
+    expect(drawOrderSeq(reorderByDrawOrder(base, "c", "later"))).toEqual(["a", "b", "c"]);
   });
 });
 
